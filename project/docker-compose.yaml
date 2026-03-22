@@ -1,7 +1,7 @@
 services:
   backend:
     container_name: django-backend
-    image: sergeyvernyk/django-backend-2:{IMAGE_TAG}
+    image: sergeyvernyk/django-backend-2:${IMAGE_TAG}
     user: django-user
     ports:
       - 8000:8001
