@@ -30,7 +30,7 @@ jobs:
       image-name: ${{ vars.IMAGE_NAME }}
       context-path: .
       dockerfile-path: Dockerfile
-      working-directory: project
+      working-directory: ./project
       registry-username: ${{ vars.REGISTRY_USERNAME }}
       tags: |
         type=sha
