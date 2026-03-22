@@ -4,8 +4,8 @@ on:
   push:
     branches:
       - main
-    paths:
-      - project/** # запуск лише якщо змінено DRF частину проєкту
+    # paths:
+    #   - project/** # запуск лише якщо змінено DRF частину проєкту
 
   pull_request:
     branches:
