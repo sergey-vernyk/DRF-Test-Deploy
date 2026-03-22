@@ -1,0 +1,35 @@
+name: SSH Setup
+
+on:
+  workflow_call:
+    secrets:
+      ssh_user:
+        description: SSH username for the server.
+        required: true
+      ssh_host:
+        description: Server hostname or IP.
+        required: true
+      ssh_private_key:
+        description: Private SSH key for authentication.
+        required: true
+
+jobs:
+  ssh-setup:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Set Up SSH Keys
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.ssh_private_key }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.ssh_host }} >> ~/.ssh/known_hosts
+          eval "$(ssh-agent -s)"
+          ssh-add ~/.ssh/id_rsa
+
+      - name: Upload SSH Config Artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: ssh-config
+          path: ssh_config.tar.gz
+          if-no-files-found: error

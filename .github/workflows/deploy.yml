@@ -1,0 +1,126 @@
+name: Deploy
+
+on:
+  workflow_run:
+    workflows:
+      - DRF CI
+    types: ["completed"]
+
+  workflow_dispatch:
+
+jobs:
+  setup-ssh:
+    if: |
+      ${{ (github.event.workflow_run.conclusion == 'success' && startsWith(github.event.workflow_run.head_branch, 'refs/tags/')) || github.event_name == 'workflow_dispatch'}}
+    uses: ./.github/workflows/setup_ssh.yml
+    name: Setup SSH
+    secrets:
+      ssh_user: ${{ secrets.SSH_USER }}
+      ssh_host: ${{ secrets.SSH_HOST }}
+      ssh_private_key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+  build-push-image:
+    if: ${{ success() }}
+    needs: setup-ssh
+    uses: ./.github/workflows/build_and_push_image.yml
+    name: Build And Push Image
+    with:
+      git-ref: ${{ github.event.workflow_run.head_branch }}
+      registry: ${{ vars.REGISTRY }}
+      image-name: ${{ vars.IMAGE_NAME }}
+      context-path: .
+      dockerfile-path: Dockerfile
+      working-directory: .
+      registry-username: ${{ vars.REGISTRY_USERNAME }}
+      tags: |
+        type=semver,pattern={{version}}
+    secrets:
+      registry-token: ${{ secrets.GITHUB_TOKEN }}
+    permissions:
+      contents: read
+      packages: write
+      attestations: write
+      id-token: write
+
+  deploy:
+    needs: [setup-ssh, build-push-image]
+    if: ${{ ! failure() }}
+
+    name: Deploy Kubernetes
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download SSH Config Artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: ssh-config
+
+      - name: Restore SSH Config
+        run: |
+          mkdir -p ~/.ssh
+          tar -xzf ssh_config.tar.gz -C ~/.ssh
+          eval "$(ssh-agent -s)"
+          ssh-add ~/.ssh/id_rsa
+
+      - name: Pre Rollout
+        env:
+          WORKING_DIR: drf_deploy_project/project
+        run: |
+          IMAGE_TAG=$(echo "${{ needs.build-push-image.outputs.image-tag }}" | cut -d: -f2)
+
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << EOF
+            cd ${{ env.WORKING_DIR }}
+            export IMAGE_TAG=$IMAGE_TAG
+            git fetch origin
+            git checkout main
+            git pull origin main
+            docker compose -f docker-compose.yaml --env-file .env up -d
+          EOF
+
+      # - name: Disable Cloudflare Under Attack Mode
+      #   if: ${{ vars.ENABLED_UNDER_ATTACK == 'true' }}
+      #   uses: ./.github/actions/setup_cloudflare_security
+      #   with:
+      #     security_level: medium
+      #     cloudflare_zone_id: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+      #     api_key_cloudflare: ${{ secrets.API_KEY_CLOUDFLARE }}
+
+      # - name: Rollout New Deployment
+      #   env:
+      #     KUSTOMIZE_DIR: deployments
+      #   run: |
+      #     IMAGE_TAG=$(echo "${{ needs.build-push-image.outputs.image-tag }}" | cut -d: -f2)
+
+      #     ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << EOF
+      #       cd ${{ secrets.MANIFESTS_DIR }}
+      #       export IMAGE_TAG=$IMAGE_TAG
+      #       chmod 750 rollout.sh
+      #       ./rollout.sh ${{ env.KUSTOMIZE_DIR }} ${{ vars.REGISTRY }} ${{ vars.GHCR_USERNAME }} ${{ vars.IMAGE_NAME }} $IMAGE_TAG ${{ vars.K8S_NAMESPACE }}
+      #     EOF
+
+      # - name: Delay for Security Mode Change
+      #   if: ${{ vars.ENABLED_UNDER_ATTACK == 'true' }}
+      #   run: sleep 10
+
+      # - name: Health Check
+      #   run: |
+      #     response_code=$(curl -s -w "%{http_code}" -o /tmp/production_health_response.json ${{ secrets.BASE_URL }}/health_check)
+      #     if [ "$response_code" -ne 200 ]; then
+      #         echo "Health check failed with status $response_code"
+      #         exit 1
+      #     else
+      #         echo "Health check passed!"
+      #         echo "Server Health Status:"
+      #         cat /tmp/production_health_response.json | jq
+      #     fi
+
+      # - name: Enable Cloudflare Under Attack Mode
+      #   if: ${{ vars.ENABLED_UNDER_ATTACK == 'true' }}
+      #   uses: ./.github/actions/setup_cloudflare_security
+      #   with:
+      #     security_level: under_attack
+      #     cloudflare_zone_id: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+      #     api_key_cloudflare: ${{ secrets.API_KEY_CLOUDFLARE }}
+
+      - name: Cleanup
+        run: rm -rf ~/.ssh
