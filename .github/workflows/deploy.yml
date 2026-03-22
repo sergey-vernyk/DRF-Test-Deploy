@@ -28,7 +28,7 @@ jobs:
       git-ref: ${{ github.event.workflow_run.head_branch }}
       registry: ${{ vars.REGISTRY }}
       image-name: ${{ vars.IMAGE_NAME }}
-      context-path: .
+      context-path: ./project
       dockerfile-path: Dockerfile
       working-directory: ./project
       registry-username: ${{ vars.REGISTRY_USERNAME }}
