@@ -24,8 +24,8 @@ RUN adduser $user --disabled-password
 # створюємо папку для проєкту і даємо користувачу права на неї
 # щоб користувач мав право на роботу з цією папкою
 # та всіма вкладеними папками
-RUN mkdir -p /app && \
-    chown -R $user /app
+RUN mkdir -p /app /app/static && \
+    chown -R $user /app /app/static
 
 # копіюємо файл із залежностями
 ADD ./requirements.txt ./requirements.txt
