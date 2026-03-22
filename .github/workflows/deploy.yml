@@ -11,7 +11,7 @@ on:
 jobs:
   setup-ssh:
     if: |
-      ${{ (github.event.workflow_run.conclusion == 'success' && startsWith(github.event.workflow_run.head_branch, 'refs/tags/')) || github.event_name == 'workflow_dispatch'}}
+      ${{ (github.event.workflow_run.conclusion == 'success') || github.event_name == 'workflow_dispatch'}}
     uses: ./.github/workflows/setup_ssh.yml
     name: Setup SSH
     secrets:
@@ -35,7 +35,7 @@ jobs:
       tags: |
         type=semver,pattern={{version}}
     secrets:
-      registry-token: ${{ secrets.GITHUB_TOKEN }}
+      registry-token: ${{ secrets.REGISTRY_TOKEN }}
     permissions:
       contents: read
       packages: write
