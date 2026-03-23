@@ -1,4 +1,5 @@
 from contextvars import ContextVar
+from typing import Callable
 from uuid import uuid4
 
 from django.http import HttpRequest, HttpResponse
@@ -12,7 +13,7 @@ class RequestIdMiddleware:
     для передачі її в лог.
     """
 
-    def __init__(self, get_response) -> None:
+    def __init__(self, get_response: Callable) -> None:
         self.get_response = get_response
 
     def __call__(self, request: HttpRequest) -> HttpResponse:
