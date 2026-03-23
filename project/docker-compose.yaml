@@ -59,7 +59,7 @@ volumes:
     driver_opts:
       type: none
       o: bind
-      device: /home/ubuntu/drf_deploy_project/project/static
+      device: /home/ubuntu/drf_deploy_project_static
 networks:
   backend:
     driver: bridge

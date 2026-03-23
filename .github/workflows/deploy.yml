@@ -74,7 +74,7 @@ jobs:
             git fetch origin
             git checkout main
             git pull origin main
-            docker compose -f docker-compose.yaml --env-file .env up -d
+            docker compose --env-file .env up -d --pull always 
           EOF
 
       - name: Cleanup
