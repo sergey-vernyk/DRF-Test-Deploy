@@ -5,13 +5,12 @@ import socket
 from django.db import DatabaseError
 from django.http import Http404
 from django.shortcuts import get_object_or_404
+from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.exceptions import ValidationError
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
-
-from rest_framework import status
 
 from .models import Book
 from .serializers import BookSerializer
@@ -45,7 +44,7 @@ class BookListCreateAPIView(APIView):
 
         serializer.save()
         logger.info("New book created!", extra={"user": request.user.pk})
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class BookDetailAPIView(APIView):
