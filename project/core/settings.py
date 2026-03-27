@@ -15,19 +15,39 @@ SECRET_KEY = os.environ.get("SECRET_KEY")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get("DEBUG", "True") == "True"
 
+# доступ тільки з дозволених хостів
+# 'Host' Header
 ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "localhost").split(",")
+# дозволені Origin (заголовок) для unsafe-запитів (POST, PUT, DELETE, PATCH)
+# але CSRF token все одно обов'язковий (whitelist),
+# тобто з яких frontend-origin дозволено unsafe requests
 CSRF_TRUSTED_ORIGINS = os.environ.get("CSRF_TRUSTED_ORIGINS", "http://127.0.0.1").split(
     ","
 )
+
+# JavaScript не має доступу до sessionid cookie
 SESSION_COOKIE_HTTPONLY = True
+# сесія завершується і видаляється при закритті браузера
+# але працює не для всіх браузерів
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+
+# передача sessionid
+# та csrftoken cookies тільки через HTTPS
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
-CSRF_COOKIE_SAMESITE = "None"
-SESSION_COOKIE_SAMESITE = "None"
+# Lax - cookies передаються у звичайних переходах між сайтами
+# None — cookies передаються і в cross-site запитах (тільки через HTTPS)
+# same-site = однаковий registrable domain (google.com)
+CSRF_COOKIE_SAMESITE = "Lax"
+SESSION_COOKIE_SAMESITE = "Lax"
 
+# автоматично перенаправляє HTTP -> HTTPS при DEBUG=False
 SECURE_SSL_REDIRECT = not DEBUG
+# якщо додаток працює через Nginx, то Django буде довіряти
+# заголовку HTTP_X_FORWARDED_PROTO, який встановлює Nginx
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+# цей ендпоінт може бути використаний через HTTP
+# переадресація на HTTPS не буде застосована автоматично
 SECURE_REDIRECT_EXEMPT = [
     r"check_pod/",
 ]

@@ -54,10 +54,10 @@ def check_pod_host(_: Request) -> Response:
 class BookListCreateAPIView(APIView):
     """View для створення книги і для отримання списку книг."""
 
-    permission_classes = [IsAuthenticated]
-    authentication_classes = [SessionAuthentication]
-    throttle_classes = [AnonRateThrottle, UserRateThrottle]
-    http_method_names = ["options", "get", "post"]
+    permission_classes = [IsAuthenticated]  # 403 Forbidden
+    authentication_classes = [SessionAuthentication]  # 401 Unauthorized
+    throttle_classes = [AnonRateThrottle, UserRateThrottle]  # 429 Too Many Requests
+    http_method_names = ["options", "get", "post"]  # 405 Method Not Allowed
 
     def get(self, _: Request) -> Response:
         books = Book.objects.select_related("publisher").prefetch_related("authors")
