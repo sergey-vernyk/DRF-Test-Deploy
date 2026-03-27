@@ -3,19 +3,44 @@ import random
 import socket
 
 from django.db import DatabaseError
-from django.http import Http404
-from django.shortcuts import get_object_or_404
+from django.http import Http404, HttpResponse
+from django.shortcuts import get_object_or_404, render
 from rest_framework import status
+from rest_framework.authentication import SessionAuthentication
 from rest_framework.decorators import api_view
 from rest_framework.exceptions import ValidationError
-from rest_framework.request import Request
+from rest_framework.parsers import FormParser
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.request import HttpRequest, Request
 from rest_framework.response import Response
+from rest_framework.throttling import AnonRateThrottle, UserRateThrottle
 from rest_framework.views import APIView
 
 from .models import Book
 from .serializers import BookSerializer
 
 logger = logging.getLogger(__name__)
+
+
+def book_csrf_html_demo(request: HttpRequest) -> HttpResponse:
+    """HTML сторінка для демонстрації CSRF атаки."""
+    return render(request, template_name="books/csrf_demo.html")
+
+
+class BookCSRFDemoView(APIView):
+    """Ендпоінт для демонстрації CSRF атаки."""
+
+    parser_classes = [FormParser]
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [SessionAuthentication]
+
+    def post(self, request: Request) -> Response:
+        title = request.data.get("title")
+
+        return Response(
+            {"message": f"Book '{title}' created"},
+            status=status.HTTP_201_CREATED,
+        )
 
 
 @api_view(["GET"])
@@ -28,6 +53,11 @@ def check_pod_host(_: Request) -> Response:
 
 class BookListCreateAPIView(APIView):
     """View для створення книги і для отримання списку книг."""
+
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [SessionAuthentication]
+    throttle_classes = [AnonRateThrottle, UserRateThrottle]
+    http_method_names = ["options", "get", "post"]
 
     def get(self, _: Request) -> Response:
         books = Book.objects.select_related("publisher").prefetch_related("authors")
