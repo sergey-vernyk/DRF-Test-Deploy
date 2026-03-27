@@ -1,7 +1,7 @@
+from django.contrib.auth import get_user_model
+from rest_framework import status
 from rest_framework.reverse import reverse
 from rest_framework.test import APITestCase
-
-from rest_framework import status
 
 from .models import Author, Book, Publisher
 
@@ -10,6 +10,9 @@ GET_LIST_CREATE_BOOK_URL = reverse("book_list_create")
 
 class BookAPITestCase(APITestCase):
     def setUp(self) -> None:
+        self.auth_user = get_user_model().objects.create_user(
+            username="serhii", password="password"
+        )
         # базові пов'язані об'єкти для тестів
         self.publisher = Publisher.objects.create(
             name="Test Publisher", website="https://test.com"
@@ -53,6 +56,7 @@ class BookAPITestCase(APITestCase):
 
     def test_get_books_list(self) -> None:
         # перевірка списку книг
+        self.client.force_login(self.auth_user)
         response = self.client.get(GET_LIST_CREATE_BOOK_URL)
 
         self.assertEqual(Book.objects.count(), 1)
@@ -60,6 +64,7 @@ class BookAPITestCase(APITestCase):
 
     def test_create_book_success(self) -> None:
         # успішне створення книги
+        self.client.force_login(self.auth_user)
         response = self.client.post(
             GET_LIST_CREATE_BOOK_URL, self.valid_payload, format="json"
         )
@@ -72,6 +77,7 @@ class BookAPITestCase(APITestCase):
 
     def test_create_book_invalid_payload(self) -> None:
         # create з помилковими даними
+        self.client.force_login(self.auth_user)
         response = self.client.post(
             GET_LIST_CREATE_BOOK_URL,
             self.invalid_payload,
