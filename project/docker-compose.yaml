@@ -51,6 +51,19 @@ services:
     networks:
       - backend
 
+  nginx:
+    image: nginx:1.27.4-alpine
+    container_name: nginx-backend
+    env_file: .env
+    ports:
+      - 8088:80
+      - 443:443
+    volumes:
+      - ./config/deploy/nginx/default.conf.template:/etc/nginx/templates/default.conf.template
+      - backend_static:/app/static
+    depends_on:
+      - backend
+
 volumes:
   postgres_data:
     driver: local
