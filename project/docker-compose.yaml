@@ -83,9 +83,10 @@ services:
       - certs:/etc/letsencrypt
       # webroot для ACME challenge
       - certbot:/var/www/certbot
-    entrypoint: ["sh", "-c"]
     # сертифікат отримується вручну окремою командою
-    command: "echo 'Skipping certbot run'"
+    # зараз при запуску цього контейнера прссто відображаться
+    # його версія
+    command: --version
     depends_on:
       - nginx
 
